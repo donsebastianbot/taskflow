@@ -69,7 +69,11 @@ body {
 .kanban-count-done { @apply bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200; }
 
 .task-card {
-  @apply rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3 shadow-sm hover:shadow-md transition;
+  @apply rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-900/95 p-3.5 shadow-sm transition-all duration-200;
+}
+
+.task-card:hover {
+  @apply -translate-y-0.5 shadow-md border-zinc-300/80 dark:border-zinc-700/80;
 }
 
 .task-todo {
@@ -94,5 +98,5 @@ body {
 .p-urgent { @apply bg-red-100 text-red-700; }
 
 .tag {
-  @apply text-xs bg-zinc-200 dark:bg-zinc-800 rounded-full px-2 py-0.5;
+  @apply text-xs bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 rounded-full px-2 py-0.5 border border-zinc-200 dark:border-zinc-700;
 }

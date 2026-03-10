@@ -292,16 +292,16 @@ function TaskCard({ task, onEdit, onDelete, onDragStart }: { task: Task; onEdit:
   return (
     <div id={task.id} draggable onDragStart={onDragStart} className={clsx('task-card cursor-grab active:cursor-grabbing', `task-${task.status.toLowerCase()}`, overdue && 'ring-1 ring-red-400')}>
       <div className="flex justify-between items-start gap-2">
-        <h4 className="font-semibold leading-tight">{task.title}</h4>
+        <h4 className="font-semibold leading-tight tracking-tight">{task.title}</h4>
         <span className={clsx('badge', `p-${task.priority.toLowerCase()}`)}>{priorityLabel[task.priority]}</span>
       </div>
-      {task.description && <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">{task.description}</p>}
+      {task.description && <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">{task.description}</p>}
       <div className="mt-2 flex flex-wrap gap-1">{task.tags.split(',').filter(Boolean).map((t) => <span key={t} className="tag">#{t.trim()}</span>)}</div>
       <div className="mt-3 text-xs text-zinc-500 space-y-1">
         {task.requester && <p>Solicita: {task.requester}</p>}
         {task.dueDate && <p className={clsx(overdue && 'text-red-500 font-semibold')}>Límite: {format(parseISO(task.dueDate), 'dd/MM/yyyy')} {isToday(parseISO(task.dueDate)) && '· hoy'}</p>}
       </div>
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 pt-2 border-t border-zinc-200/70 dark:border-zinc-800/70 flex gap-2">
         <button className="btn-secondary" onClick={onEdit}><Pencil size={14} /></button>
         <button className="btn-secondary text-red-500" onClick={onDelete}><Trash2 size={14} /></button>
       </div>
