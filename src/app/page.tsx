@@ -32,7 +32,7 @@ export default function Home() {
   const [dueFilter, setDueFilter] = useState('');
   const [view, setView] = useState<'KANBAN' | 'LIST' | 'CALENDAR'>('KANBAN');
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate'>('priority');
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [editing, setEditing] = useState<Task | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -50,11 +50,10 @@ export default function Home() {
   useEffect(() => {
     loadTasks();
     const saved = localStorage.getItem('taskflow_theme');
-    if (saved === 'dark') {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
-      document.body.classList.add('dark');
-    }
+    const useDark = saved ? saved === 'dark' : true;
+    setIsDark(useDark);
+    document.documentElement.classList.toggle('dark', useDark);
+    document.body.classList.toggle('dark', useDark);
   }, []);
 
   function toggleTheme() {
