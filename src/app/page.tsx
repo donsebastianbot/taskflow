@@ -10,12 +10,12 @@ import { Moon, Sun, Search, Plus, Trash2, Pencil, ChevronLeft, ChevronRight } fr
 const statuses: TaskStatus[] = ['PENDING', 'IN_PROGRESS', 'IN_REVIEW', 'TESTING', 'COMPLETED', 'BLOCKED'];
 
 const statusLabels: Record<TaskStatus, string> = {
-  PENDING: '📋 Pendiente',
-  IN_PROGRESS: '🛠 En desarrollo',
-  IN_REVIEW: '🔍 En revisión',
-  TESTING: '🧪 Testing',
-  COMPLETED: '✅ Completado',
-  BLOCKED: '⛔ Bloqueado',
+  PENDING: 'Pendiente',
+  IN_PROGRESS: 'En desarrollo',
+  IN_REVIEW: 'En revisión',
+  TESTING: 'Testing',
+  COMPLETED: 'Completado',
+  BLOCKED: 'Bloqueado',
 };
 
 const priorities: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
@@ -252,10 +252,7 @@ export default function Home() {
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
             {statuses.map((status) => (
               <div key={status} className="kanban-col" onDragOver={(e) => e.preventDefault()} onDrop={() => dropOn(status)}>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="kanban-title">{statusLabels[status]}</h3>
-                  <span className="kanban-count">{byStatus(status).length}</span>
-                </div>
+                <h3 className="text-sm font-semibold text-zinc-500 mb-3">{statusLabels[status]}</h3>
                 <div className="space-y-3 min-h-24">
                   {byStatus(status).map((task) => (
                     <TaskCard key={task.id} task={task} onEdit={() => { setEditing(task); setShowForm(true); }} onDelete={() => handleDelete(task.id)} onDragStart={() => setDragId(task.id)} />
