@@ -42,7 +42,8 @@ body {
 }
 
 .kanban-col {
-  @apply rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 min-h-[280px];
+  @apply rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/90 p-3.5 min-h-[280px] shadow-sm;
+  backdrop-filter: blur(6px);
 }
 
 .kanban-col h3 {
@@ -50,7 +51,7 @@ body {
 }
 
 .kanban-title {
-  @apply inline-flex items-center px-2.5 py-1 rounded-full;
+  @apply inline-flex items-center px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200;
 }
 
 .kanban-todo { @apply bg-white dark:bg-zinc-900; }
@@ -62,18 +63,19 @@ body {
 .kanban-title-done { @apply bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200; }
 
 .kanban-count {
-  @apply text-xs font-semibold px-2 py-1 rounded-full;
+  @apply text-xs font-semibold px-2 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-200;
 }
-.kanban-count-todo { @apply bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200; }
-.kanban-count-doing { @apply bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200; }
-.kanban-count-done { @apply bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200; }
 
 .task-card {
-  @apply rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-900/95 p-3.5 shadow-sm transition-all duration-200;
+  @apply rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-3.5 shadow-sm transition-all duration-200;
 }
 
 .task-card:hover {
   @apply -translate-y-0.5 shadow-md border-zinc-300/80 dark:border-zinc-700/80;
+}
+
+.kanban-col .task-card + .task-card {
+  @apply mt-3;
 }
 
 .task-todo {
