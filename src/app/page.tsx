@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import clsx from 'clsx';
-import { eachDayOfInterval, endOfMonth, endOfWeek, format, isBefore, isSameMonth, isToday, parseISO, startOfMonth, startOfWeek } from 'date-fns';
+import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isBefore, isSameMonth, isToday, parseISO, startOfMonth, startOfWeek } from 'date-fns';
 import { Task, TaskStatus, Priority } from '@/lib/types';
-import { Moon, Sun, Search, Plus, Trash2, Pencil } from 'lucide-react';
+import { Moon, Sun, Search, Plus, Trash2, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const statusLabels: Record<TaskStatus, string> = {
   TODO: 'Pendientes',
@@ -33,6 +33,7 @@ export default function Home() {
   const [view, setView] = useState<'KANBAN' | 'LIST' | 'CALENDAR'>('KANBAN');
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate'>('priority');
   const [isDark, setIsDark] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [editing, setEditing] = useState<Task | null>(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -247,7 +248,13 @@ export default function Home() {
             {filtered.map((task) => <TaskRow key={task.id} task={task} onEdit={() => { setEditing(task); setShowForm(true); }} onDelete={() => handleDelete(task.id)} onMove={moveTask} />)}
           </div>
         ) : (
-          <MonthlyCalendar tasks={filtered} />
+          <MonthlyCalendar
+            tasks={filtered}
+            month={calendarMonth}
+            onPrevMonth={() => setCalendarMonth((m) => addMonths(m, -1))}
+            onNextMonth={() => setCalendarMonth((m) => addMonths(m, 1))}
+            onToday={() => setCalendarMonth(new Date())}
+          />
         )}
       </div>
 
@@ -315,10 +322,22 @@ function TaskRow({ task, onEdit, onDelete, onMove }: { task: Task; onEdit: () =>
   );
 }
 
-function MonthlyCalendar({ tasks }: { tasks: Task[] }) {
+function MonthlyCalendar({
+  tasks,
+  month,
+  onPrevMonth,
+  onNextMonth,
+  onToday,
+}: {
+  tasks: Task[];
+  month: Date;
+  onPrevMonth: () => void;
+  onNextMonth: () => void;
+  onToday: () => void;
+}) {
   const today = new Date();
-  const monthStart = startOfMonth(today);
-  const monthEnd = endOfMonth(today);
+  const monthStart = startOfMonth(month);
+  const monthEnd = endOfMonth(month);
   const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
   const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
@@ -330,8 +349,13 @@ function MonthlyCalendar({ tasks }: { tasks: Task[] }) {
 
   return (
     <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold">Calendario mensual · {format(today, 'MMMM yyyy')}</h3>
+      <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+        <h3 className="text-lg font-semibold">Calendario mensual · {format(month, 'MMMM yyyy')}</h3>
+        <div className="flex items-center gap-2">
+          <button className="btn-secondary" onClick={onPrevMonth}><ChevronLeft size={16} /></button>
+          <button className="btn-secondary" onClick={onToday}>Hoy</button>
+          <button className="btn-secondary" onClick={onNextMonth}><ChevronRight size={16} /></button>
+        </div>
       </div>
       <div className="grid grid-cols-7 gap-2 text-xs font-semibold text-zinc-500 mb-2">
         {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((d) => <div key={d}>{d}</div>)}
