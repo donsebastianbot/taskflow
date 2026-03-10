@@ -53,35 +53,35 @@ body {
   @apply inline-flex items-center px-2.5 py-1 rounded-full;
 }
 
-.kanban-todo { @apply bg-amber-50/30 dark:bg-amber-950/10 border-amber-100 dark:border-amber-900; }
-.kanban-doing { @apply bg-blue-50/30 dark:bg-blue-950/10 border-blue-100 dark:border-blue-900; }
-.kanban-done { @apply bg-emerald-50/30 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900; }
+.kanban-todo { @apply bg-amber-50/25 dark:bg-amber-950/10; }
+.kanban-doing { @apply bg-blue-50/25 dark:bg-blue-950/10; }
+.kanban-done { @apply bg-emerald-50/25 dark:bg-emerald-950/10; }
 
 .kanban-title-todo { @apply bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300; }
 .kanban-title-doing { @apply bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300; }
 .kanban-title-done { @apply bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300; }
 
 .kanban-count {
-  @apply text-xs font-semibold px-2 py-1 rounded-full border;
+  @apply text-xs font-semibold px-2 py-1 rounded-full;
 }
-.kanban-count-todo { @apply bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800; }
-.kanban-count-doing { @apply bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800; }
-.kanban-count-done { @apply bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-800; }
+.kanban-count-todo { @apply bg-amber-100/70 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300; }
+.kanban-count-doing { @apply bg-blue-100/70 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300; }
+.kanban-count-done { @apply bg-emerald-100/70 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300; }
 
 .task-card {
   @apply rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-3 shadow-sm hover:shadow-md transition;
 }
 
 .task-todo {
-  @apply bg-amber-50/35 dark:bg-amber-950/10 border-amber-100 dark:border-amber-900;
+  @apply bg-amber-50/30 dark:bg-amber-950/10;
 }
 
 .task-doing {
-  @apply bg-blue-50/35 dark:bg-blue-950/10 border-blue-100 dark:border-blue-900;
+  @apply bg-blue-50/30 dark:bg-blue-950/10;
 }
 
 .task-done {
-  @apply bg-emerald-50/35 dark:bg-emerald-950/10 border-emerald-100 dark:border-emerald-900;
+  @apply bg-emerald-50/30 dark:bg-emerald-950/10;
 }
 
 .badge {
