@@ -124,7 +124,7 @@ export default function Home() {
     if (query) {
       const q = query.toLowerCase();
       result = result.filter((t) =>
-        [t.title, t.description ?? '', t.requester ?? '', t.tags, t.internalNotes ?? '']
+        [t.title, t.description ?? '', t.tags, t.internalNotes ?? '']
           .join(' ')
           .toLowerCase()
           .includes(q)
@@ -314,7 +314,6 @@ function TaskCard({ task, onEdit, onDelete, onDragStart }: { task: Task; onEdit:
       {task.description && <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">{task.description}</p>}
       <div className="mt-2 flex flex-wrap gap-1">{task.tags.split(',').filter(Boolean).map((t) => <span key={t} className="tag">#{t.trim()}</span>)}</div>
       <div className="mt-3 text-xs text-zinc-500 space-y-1">
-        {task.requester && <p>Solicita: {task.requester}</p>}
         {task.dueDate && <p className={clsx(overdue && 'text-red-500 font-semibold')}>Límite: {format(parseISO(task.dueDate), 'dd/MM/yyyy')} {isToday(parseISO(task.dueDate)) && '· hoy'}</p>}
       </div>
       <div className="mt-3 pt-2 border-t border-zinc-200/70 dark:border-zinc-800/70 flex gap-2">
@@ -328,7 +327,7 @@ function TaskCard({ task, onEdit, onDelete, onDragStart }: { task: Task; onEdit:
 function TaskRow({ task, onEdit, onDelete, onMove }: { task: Task; onEdit: () => void; onDelete: () => void; onMove: (id: string, s: TaskStatus) => void }) {
   return (
     <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 grid md:grid-cols-6 gap-2 items-center">
-      <div className="md:col-span-2"><p className="font-medium">{task.title}</p><p className="text-xs text-zinc-500">{task.requester || 'Sin solicitante'}</p></div>
+      <div className="md:col-span-2"><p className="font-medium">{task.title}</p></div>
       <div><span className={clsx('badge', `p-${task.priority.toLowerCase()}`)}>{priorityLabel[task.priority]}</span></div>
       <div className="text-sm">{task.dueDate ? format(parseISO(task.dueDate), 'dd/MM/yyyy') : '-'}</div>
       <div>
@@ -406,7 +405,6 @@ function TaskFormModal({ task, onClose, onSaved }: { task: Task | null; onClose:
     dueDate: task?.dueDate?.slice(0, 10) || '',
     status: task?.status || 'PENDING',
     tags: task?.tags || '',
-    requester: task?.requester || '',
     internalNotes: task?.internalNotes || '',
   });
 
@@ -423,8 +421,8 @@ function TaskFormModal({ task, onClose, onSaved }: { task: Task | null; onClose:
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 p-4 grid place-items-center z-50">
-      <form onSubmit={submit} className="w-full max-w-2xl rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 space-y-3">
+    <div className="fixed inset-0 bg-black/40 p-4 grid place-items-center z-50" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <form onMouseDown={(e) => e.stopPropagation()} onSubmit={submit} className="w-full max-w-2xl rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 space-y-3">
         <h3 className="text-xl font-semibold">{task ? 'Editar tarea' : 'Nueva tarea'}</h3>
         <input required className="input" placeholder="Título" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         <textarea className="input min-h-20" placeholder="Descripción" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
@@ -434,7 +432,6 @@ function TaskFormModal({ task, onClose, onSaved }: { task: Task | null; onClose:
           <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as TaskStatus })}>{statuses.map((s) => <option key={s} value={s}>{statusLabels[s]}</option>)}</select>
         </div>
         <input className="input" placeholder="Etiquetas separadas por coma" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
-        <input className="input" placeholder="Persona o área solicitante" value={form.requester} onChange={(e) => setForm({ ...form, requester: e.target.value })} />
         <textarea className="input min-h-20" placeholder="Notas internas" value={form.internalNotes} onChange={(e) => setForm({ ...form, internalNotes: e.target.value })} />
         <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button><button className="btn-primary">Guardar</button></div>
       </form>
