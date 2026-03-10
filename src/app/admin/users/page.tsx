@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 type User = { id: string; email: string; role: 'ADMIN' | 'USER'; createdAt: string };
 
@@ -55,7 +56,10 @@ export default function AdminUsersPage() {
   return (
     <main className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 p-6">
       <div className="max-w-4xl mx-auto space-y-6">
-        <h1 className="text-2xl font-semibold">Panel Admin · Usuarios</h1>
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/" className="text-2xl font-semibold tracking-tight hover:opacity-80 transition">TaskFlow</Link>
+          <h1 className="text-lg text-zinc-500">Panel Admin · Usuarios</h1>
+        </div>
 
         <form onSubmit={createUser} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 grid md:grid-cols-4 gap-2">
           <input className="input" placeholder="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
