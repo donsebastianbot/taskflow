@@ -16,6 +16,9 @@ export function middleware(request: NextRequest) {
 
   const session = request.cookies.get(AUTH_COOKIE)?.value;
   if (session !== token()) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.redirect(new URL('/login', request.url));
   }
 

@@ -46,10 +46,24 @@ export default function Home() {
 
   async function loadTasks() {
     setLoading(true);
-    const res = await fetch('/api/tasks');
-    const data = await res.json();
-    setTasks(data);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/tasks', { cache: 'no-store' });
+      if (!res.ok) {
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+        throw new Error(`Error ${res.status}`);
+      }
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : [];
+      setTasks(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('loadTasks error:', error);
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
