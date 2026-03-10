@@ -1,0 +1,302 @@
+"use client";
+
+import { useEffect, useMemo, useState } from 'react';
+
+import clsx from 'clsx';
+import { format, isBefore, isToday, parseISO } from 'date-fns';
+import { Task, TaskStatus, Priority } from '@/lib/types';
+import { Moon, Sun, Search, Plus, Trash2, Pencil } from 'lucide-react';
+
+const statusLabels: Record<TaskStatus, string> = {
+  TODO: 'Pendientes',
+  DOING: 'Realizando',
+  DONE: 'Hechas',
+};
+
+const priorities: Priority[] = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'];
+
+const priorityLabel: Record<Priority, string> = {
+  LOW: 'Baja',
+  MEDIUM: 'Media',
+  HIGH: 'Alta',
+  URGENT: 'Urgente',
+};
+
+export default function Home() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | TaskStatus>('ALL');
+  const [priorityFilter, setPriorityFilter] = useState<'ALL' | Priority>('ALL');
+  const [tagFilter, setTagFilter] = useState('');
+  const [dueFilter, setDueFilter] = useState('');
+  const [view, setView] = useState<'KANBAN' | 'LIST'>('KANBAN');
+  const [sortBy, setSortBy] = useState<'priority' | 'dueDate'>('priority');
+  const [isDark, setIsDark] = useState(false);
+  const [editing, setEditing] = useState<Task | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const [dragId, setDragId] = useState<string | null>(null);
+
+  async function loadTasks() {
+    setLoading(true);
+    const res = await fetch('/api/tasks');
+    const data = await res.json();
+    setTasks(data);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    loadTasks();
+    const saved = localStorage.getItem('taskflow_theme');
+    if (saved === 'dark') {
+      setIsDark(true);
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  function toggleTheme() {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle('dark', next);
+    localStorage.setItem('taskflow_theme', next ? 'dark' : 'light');
+  }
+
+  const metrics = useMemo(() => {
+    const now = new Date();
+    return {
+      todo: tasks.filter((t) => t.status === 'TODO').length,
+      doing: tasks.filter((t) => t.status === 'DOING').length,
+      done: tasks.filter((t) => t.status === 'DONE').length,
+      overdue: tasks.filter((t) => t.dueDate && isBefore(parseISO(t.dueDate), now) && t.status !== 'DONE').length,
+    };
+  }, [tasks]);
+
+  const filtered = useMemo(() => {
+    let result = [...tasks];
+    if (query) {
+      const q = query.toLowerCase();
+      result = result.filter((t) =>
+        [t.title, t.description ?? '', t.requester ?? '', t.tags, t.internalNotes ?? '']
+          .join(' ')
+          .toLowerCase()
+          .includes(q)
+      );
+    }
+    if (statusFilter !== 'ALL') result = result.filter((t) => t.status === statusFilter);
+    if (priorityFilter !== 'ALL') result = result.filter((t) => t.priority === priorityFilter);
+    if (tagFilter) result = result.filter((t) => t.tags.toLowerCase().includes(tagFilter.toLowerCase()));
+    if (dueFilter) result = result.filter((t) => (t.dueDate || '').slice(0, 10) === dueFilter);
+
+    result.sort((a, b) => {
+      if (sortBy === 'priority') return priorities.indexOf(b.priority) - priorities.indexOf(a.priority);
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return +new Date(a.dueDate) - +new Date(b.dueDate);
+    });
+
+    return result;
+  }, [tasks, query, statusFilter, priorityFilter, tagFilter, dueFilter, sortBy]);
+
+  const byStatus = (status: TaskStatus) => filtered.filter((t) => t.status === status);
+
+  async function handleDelete(id: string) {
+    if (!confirm('¿Eliminar tarea?')) return;
+    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+    await loadTasks();
+  }
+
+  async function moveTask(id: string, status: TaskStatus) {
+    await fetch(`/api/tasks/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    await loadTasks();
+  }
+
+  function dropOn(status: TaskStatus) {
+    if (dragId) {
+      moveTask(dragId, status);
+      setDragId(null);
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-6">
+        <header className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/70 backdrop-blur p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">TaskFlow</h1>
+              <p className="text-sm text-zinc-500">Gestor de tareas profesional para tu trabajo diario</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={toggleTheme} className="btn-secondary">{isDark ? <Sun size={16} /> : <Moon size={16} />}</button>
+              <button onClick={() => { setEditing(null); setShowForm(true); }} className="btn-primary"><Plus size={16} /> Nueva tarea</button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+            <Metric label="Pendientes" value={metrics.todo} />
+            <Metric label="En curso" value={metrics.doing} />
+            <Metric label="Completadas" value={metrics.done} />
+            <Metric label="Vencidas" value={metrics.overdue} danger />
+          </div>
+        </header>
+
+        <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 space-y-3">
+          <div className="grid md:grid-cols-5 gap-2">
+            <label className="input-wrap md:col-span-2"><Search size={16} /><input placeholder="Buscar tarea..." value={query} onChange={(e) => setQuery(e.target.value)} /></label>
+            <select className="input" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as 'ALL' | TaskStatus)}>
+              <option value="ALL">Todos los estados</option>
+              <option value="TODO">Pendientes</option>
+              <option value="DOING">Realizando</option>
+              <option value="DONE">Hechas</option>
+            </select>
+            <select className="input" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as 'ALL' | Priority)}>
+              <option value="ALL">Todas prioridades</option>
+              {priorities.map((p) => <option key={p} value={p}>{priorityLabel[p]}</option>)}
+            </select>
+            <input className="input" type="date" value={dueFilter} onChange={(e) => setDueFilter(e.target.value)} />
+          </div>
+          <div className="flex flex-wrap gap-2 items-center">
+            <input className="input flex-1 min-w-44" placeholder="Filtrar por etiqueta" value={tagFilter} onChange={(e) => setTagFilter(e.target.value)} />
+            <select className="input" value={sortBy} onChange={(e) => setSortBy(e.target.value as 'priority' | 'dueDate')}>
+              <option value="priority">Ordenar por prioridad</option>
+              <option value="dueDate">Ordenar por fecha límite</option>
+            </select>
+            <div className="segmented">
+              <button className={clsx(view === 'KANBAN' && 'active')} onClick={() => setView('KANBAN')}>Kanban</button>
+              <button className={clsx(view === 'LIST' && 'active')} onClick={() => setView('LIST')}>Lista</button>
+            </div>
+          </div>
+        </section>
+
+        {loading ? <p>Cargando tareas...</p> : view === 'KANBAN' ? (
+          <div className="grid md:grid-cols-3 gap-4">
+            {(['TODO', 'DOING', 'DONE'] as TaskStatus[]).map((status) => (
+              <div key={status} className="kanban-col" onDragOver={(e) => e.preventDefault()} onDrop={() => dropOn(status)}>
+                <h3>{statusLabels[status]}</h3>
+                <div className="space-y-3 min-h-24">
+                  {byStatus(status).map((task) => (
+                    <TaskCard key={task.id} task={task} onEdit={() => { setEditing(task); setShowForm(true); }} onDelete={() => handleDelete(task.id)} onDragStart={() => setDragId(task.id)} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden">
+            {filtered.map((task) => <TaskRow key={task.id} task={task} onEdit={() => { setEditing(task); setShowForm(true); }} onDelete={() => handleDelete(task.id)} onMove={moveTask} />)}
+          </div>
+        )}
+      </div>
+
+      {showForm && (
+        <TaskFormModal
+          task={editing}
+          onClose={() => setShowForm(false)}
+          onSaved={async () => {
+            setShowForm(false);
+            setEditing(null);
+            await loadTasks();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function Metric({ label, value, danger = false }: { label: string; value: number; danger?: boolean }) {
+  return (
+    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 bg-zinc-50/80 dark:bg-zinc-950/60">
+      <p className="text-xs text-zinc-500">{label}</p>
+      <p className={clsx('text-2xl font-bold', danger && 'text-red-500')}>{value}</p>
+    </div>
+  );
+}
+
+function TaskCard({ task, onEdit, onDelete, onDragStart }: { task: Task; onEdit: () => void; onDelete: () => void; onDragStart: () => void }) {
+  const overdue = task.dueDate && isBefore(parseISO(task.dueDate), new Date()) && task.status !== 'DONE';
+  return (
+    <div id={task.id} draggable onDragStart={onDragStart} className={clsx('task-card cursor-grab active:cursor-grabbing', overdue && 'ring-1 ring-red-400')}>
+      <div className="flex justify-between items-start gap-2">
+        <h4 className="font-semibold leading-tight">{task.title}</h4>
+        <span className={clsx('badge', `p-${task.priority.toLowerCase()}`)}>{priorityLabel[task.priority]}</span>
+      </div>
+      {task.description && <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">{task.description}</p>}
+      <div className="mt-2 flex flex-wrap gap-1">{task.tags.split(',').filter(Boolean).map((t) => <span key={t} className="tag">#{t.trim()}</span>)}</div>
+      <div className="mt-3 text-xs text-zinc-500 space-y-1">
+        {task.requester && <p>Solicita: {task.requester}</p>}
+        {task.dueDate && <p className={clsx(overdue && 'text-red-500 font-semibold')}>Límite: {format(parseISO(task.dueDate), 'dd/MM/yyyy')} {isToday(parseISO(task.dueDate)) && '· hoy'}</p>}
+      </div>
+      <div className="mt-3 flex gap-2">
+        <button className="btn-secondary" onClick={onEdit}><Pencil size={14} /></button>
+        <button className="btn-secondary text-red-500" onClick={onDelete}><Trash2 size={14} /></button>
+      </div>
+    </div>
+  );
+}
+
+function TaskRow({ task, onEdit, onDelete, onMove }: { task: Task; onEdit: () => void; onDelete: () => void; onMove: (id: string, s: TaskStatus) => void }) {
+  return (
+    <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 grid md:grid-cols-6 gap-2 items-center">
+      <div className="md:col-span-2"><p className="font-medium">{task.title}</p><p className="text-xs text-zinc-500">{task.requester || 'Sin solicitante'}</p></div>
+      <div><span className={clsx('badge', `p-${task.priority.toLowerCase()}`)}>{priorityLabel[task.priority]}</span></div>
+      <div className="text-sm">{task.dueDate ? format(parseISO(task.dueDate), 'dd/MM/yyyy') : '-'}</div>
+      <div>
+        <select className="input" value={task.status} onChange={(e) => onMove(task.id, e.target.value as TaskStatus)}>
+          <option value="TODO">Pendiente</option>
+          <option value="DOING">Realizando</option>
+          <option value="DONE">Hecha</option>
+        </select>
+      </div>
+      <div className="flex gap-2 justify-end"><button className="btn-secondary" onClick={onEdit}><Pencil size={14} /></button><button className="btn-secondary text-red-500" onClick={onDelete}><Trash2 size={14} /></button></div>
+    </div>
+  );
+}
+
+function TaskFormModal({ task, onClose, onSaved }: { task: Task | null; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState({
+    title: task?.title || '',
+    description: task?.description || '',
+    priority: task?.priority || 'MEDIUM',
+    dueDate: task?.dueDate?.slice(0, 10) || '',
+    status: task?.status || 'TODO',
+    tags: task?.tags || '',
+    requester: task?.requester || '',
+    internalNotes: task?.internalNotes || '',
+  });
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const method = task ? 'PATCH' : 'POST';
+    const url = task ? `/api/tasks/${task.id}` : '/api/tasks';
+    await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean) }),
+    });
+    onSaved();
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 p-4 grid place-items-center z-50">
+      <form onSubmit={submit} className="w-full max-w-2xl rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 space-y-3">
+        <h3 className="text-xl font-semibold">{task ? 'Editar tarea' : 'Nueva tarea'}</h3>
+        <input required className="input" placeholder="Título" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        <textarea className="input min-h-20" placeholder="Descripción" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <div className="grid md:grid-cols-3 gap-2">
+          <select className="input" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as Priority })}>{priorities.map((p) => <option key={p} value={p}>{priorityLabel[p]}</option>)}</select>
+          <input className="input" type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
+          <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as TaskStatus })}><option value="TODO">Pendiente</option><option value="DOING">Realizando</option><option value="DONE">Hecha</option></select>
+        </div>
+        <input className="input" placeholder="Etiquetas separadas por coma" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+        <input className="input" placeholder="Persona o área solicitante" value={form.requester} onChange={(e) => setForm({ ...form, requester: e.target.value })} />
+        <textarea className="input min-h-20" placeholder="Notas internas" value={form.internalNotes} onChange={(e) => setForm({ ...form, internalNotes: e.target.value })} />
+        <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button><button className="btn-primary">Guardar</button></div>
+      </form>
+    </div>
+  );
+}
