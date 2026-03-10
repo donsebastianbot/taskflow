@@ -234,7 +234,10 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-4">
             {(['TODO', 'DOING', 'DONE'] as TaskStatus[]).map((status) => (
               <div key={status} className={clsx('kanban-col', `kanban-${status.toLowerCase()}`)} onDragOver={(e) => e.preventDefault()} onDrop={() => dropOn(status)}>
-                <h3 className={clsx('kanban-title', `kanban-title-${status.toLowerCase()}`)}>{statusLabels[status]}</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className={clsx('kanban-title', `kanban-title-${status.toLowerCase()}`)}>{statusLabels[status]}</h3>
+                  <span className={clsx('kanban-count', `kanban-count-${status.toLowerCase()}`)}>{byStatus(status).length}</span>
+                </div>
                 <div className="space-y-3 min-h-24">
                   {byStatus(status).map((task) => (
                     <TaskCard key={task.id} task={task} onEdit={() => { setEditing(task); setShowForm(true); }} onDelete={() => handleDelete(task.id)} onDragStart={() => setDragId(task.id)} />
@@ -285,7 +288,7 @@ function Metric({ label, value, danger = false, suffix = '' }: { label: string; 
 function TaskCard({ task, onEdit, onDelete, onDragStart }: { task: Task; onEdit: () => void; onDelete: () => void; onDragStart: () => void }) {
   const overdue = task.dueDate && isBefore(parseISO(task.dueDate), new Date()) && task.status !== 'DONE';
   return (
-    <div id={task.id} draggable onDragStart={onDragStart} className={clsx('task-card cursor-grab active:cursor-grabbing', overdue && 'ring-1 ring-red-400')}>
+    <div id={task.id} draggable onDragStart={onDragStart} className={clsx('task-card cursor-grab active:cursor-grabbing', `task-${task.status.toLowerCase()}`, overdue && 'ring-1 ring-red-400')}>
       <div className="flex justify-between items-start gap-2">
         <h4 className="font-semibold leading-tight">{task.title}</h4>
         <span className={clsx('badge', `p-${task.priority.toLowerCase()}`)}>{priorityLabel[task.priority]}</span>
