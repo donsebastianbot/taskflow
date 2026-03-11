@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import clsx from 'clsx';
-import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isBefore, isSameMonth, isToday, parseISO, startOfMonth, startOfWeek } from 'date-fns';
+import { addMonths, addWeeks, eachDayOfInterval, endOfMonth, endOfWeek, format, isBefore, isSameMonth, isToday, parseISO, startOfMonth, startOfWeek } from 'date-fns';
 import { Task, TaskStatus, Priority } from '@/lib/types';
 import { Moon, Sun, Search, Plus, Trash2, Pencil, ChevronLeft, ChevronRight, LogOut } from 'lucide-react';
 
@@ -40,6 +40,7 @@ export default function Home() {
   const [sortBy, setSortBy] = useState<'priority' | 'dueDate'>('priority');
   const [isDark, setIsDark] = useState(true);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [calendarMode, setCalendarMode] = useState<'MONTH' | 'WEEK'>('MONTH');
   const [editing, setEditing] = useState<Task | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [timeTask, setTimeTask] = useState<Task | null>(null);
@@ -296,8 +297,10 @@ export default function Home() {
           <MonthlyCalendar
             tasks={filtered}
             month={calendarMonth}
-            onPrevMonth={() => setCalendarMonth((m) => addMonths(m, -1))}
-            onNextMonth={() => setCalendarMonth((m) => addMonths(m, 1))}
+            mode={calendarMode}
+            onModeChange={setCalendarMode}
+            onPrevMonth={() => setCalendarMonth((m) => (calendarMode === 'MONTH' ? addMonths(m, -1) : addWeeks(m, -1)))}
+            onNextMonth={() => setCalendarMonth((m) => (calendarMode === 'MONTH' ? addMonths(m, 1) : addWeeks(m, 1)))}
             onToday={() => setCalendarMonth(new Date())}
             onDeleteTimeEntry={deleteTimeEntry}
           />
@@ -380,6 +383,8 @@ function TaskRow({ task, onEdit, onDelete, onLogTime, onMove }: { task: Task; on
 function MonthlyCalendar({
   tasks,
   month,
+  mode,
+  onModeChange,
   onPrevMonth,
   onNextMonth,
   onToday,
@@ -387,6 +392,8 @@ function MonthlyCalendar({
 }: {
   tasks: Task[];
   month: Date;
+  mode: 'MONTH' | 'WEEK';
+  onModeChange: (m: 'MONTH' | 'WEEK') => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
   onToday: () => void;
@@ -395,8 +402,10 @@ function MonthlyCalendar({
   const today = new Date();
   const monthStart = startOfMonth(month);
   const monthEnd = endOfMonth(month);
-  const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-  const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const weekStart = startOfWeek(month, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(month, { weekStartsOn: 1 });
+  const gridStart = mode === 'MONTH' ? startOfWeek(monthStart, { weekStartsOn: 1 }) : weekStart;
+  const gridEnd = mode === 'MONTH' ? endOfWeek(monthEnd, { weekStartsOn: 1 }) : weekEnd;
   const days = eachDayOfInterval({ start: gridStart, end: gridEnd });
 
   const tasksByDay = days.map((day) => {
@@ -414,8 +423,14 @@ function MonthlyCalendar({
   return (
     <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
       <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-        <h3 className="text-lg font-semibold">Calendario mensual · {format(month, 'MMMM yyyy')}</h3>
+        <h3 className="text-lg font-semibold">
+          {mode === 'MONTH' ? `Calendario mensual · ${format(month, 'MMMM yyyy')}` : `Calendario semanal · ${format(weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM')}`}
+        </h3>
         <div className="flex items-center gap-2">
+          <div className="segmented">
+            <button className={clsx(mode === 'MONTH' && 'active')} onClick={() => onModeChange('MONTH')}>Mes</button>
+            <button className={clsx(mode === 'WEEK' && 'active')} onClick={() => onModeChange('WEEK')}>Semana</button>
+          </div>
           <button className="btn-secondary" onClick={onPrevMonth}><ChevronLeft size={16} /></button>
           <button className="btn-secondary" onClick={onToday}>Hoy</button>
           <button className="btn-secondary" onClick={onNextMonth}><ChevronRight size={16} /></button>
@@ -426,7 +441,7 @@ function MonthlyCalendar({
       </div>
       <div className="grid grid-cols-7 gap-2">
         {tasksByDay.map(({ day, items, entries, totalHours }) => (
-          <div key={day.toISOString()} className={clsx('min-h-28 rounded-xl border p-2', isSameMonth(day, today) ? 'border-zinc-200 dark:border-zinc-800' : 'border-zinc-100 dark:border-zinc-900 opacity-60')}>
+          <div key={day.toISOString()} className={clsx('min-h-28 rounded-xl border p-2', mode === 'WEEK' || isSameMonth(day, month) ? 'border-zinc-200 dark:border-zinc-800' : 'border-zinc-100 dark:border-zinc-900 opacity-60')}>
             <p className={clsx('text-xs mb-1', isToday(day) && 'font-bold text-indigo-500')}>{format(day, 'd')}</p>
             {totalHours > 0 && <p className="text-[11px] text-indigo-600 mb-1">⏱ {totalHours.toFixed(2)} h</p>}
             <div className="space-y-1">
