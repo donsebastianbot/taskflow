@@ -29,6 +29,19 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       tags: Array.isArray(body.tags) ? body.tags.join(',') : body.tags ?? current.tags,
       requester: body.requester ?? current.requester,
       internalNotes: body.internalNotes ?? current.internalNotes,
+      estimatedMinutes: typeof body.estimatedMinutes === 'number' ? body.estimatedMinutes : body.estimatedMinutes === null ? null : current.estimatedMinutes,
+      subtasks: Array.isArray(body.subtasks)
+        ? {
+            deleteMany: {},
+            create: body.subtasks
+              .filter((s: { title?: string }) => s?.title?.trim())
+              .map((s: { title: string; estimatedMinutes?: number; completed?: boolean }) => ({
+                title: s.title.trim(),
+                estimatedMinutes: typeof s.estimatedMinutes === 'number' ? s.estimatedMinutes : null,
+                completed: !!s.completed,
+              })),
+          }
+        : undefined,
       history:
         nextStatus !== current.status
           ? {
@@ -43,6 +56,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     include: {
       comments: { orderBy: { createdAt: 'desc' } },
       history: { orderBy: { createdAt: 'desc' }, take: 6 },
+      subtasks: { orderBy: { createdAt: 'asc' } },
     },
   });
 

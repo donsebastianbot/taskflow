@@ -331,6 +331,10 @@ function TaskCard({ task, onEdit, onDelete, onDragStart }: { task: Task; onEdit:
       {task.description && <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">{task.description}</p>}
       <div className="mt-2 flex flex-wrap gap-1">{task.tags.split(',').filter(Boolean).map((t) => <span key={t} className="tag">#{t.trim()}</span>)}</div>
       <div className="mt-3 text-xs text-zinc-500 space-y-1">
+        {typeof task.estimatedMinutes === 'number' && <p>⏱ {task.estimatedMinutes} min</p>}
+        {task.subtasks?.length > 0 && (
+          <p>Subtareas: {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}</p>
+        )}
         {task.dueDate && <p className={clsx(overdue && 'text-red-500 font-semibold')}>Límite: {format(parseISO(task.dueDate), 'dd/MM/yyyy')} {isToday(parseISO(task.dueDate)) && '· hoy'}</p>}
       </div>
       <div className="mt-3 pt-2 border-t border-zinc-200/70 dark:border-zinc-800/70 flex gap-2">
@@ -344,7 +348,7 @@ function TaskCard({ task, onEdit, onDelete, onDragStart }: { task: Task; onEdit:
 function TaskRow({ task, onEdit, onDelete, onMove }: { task: Task; onEdit: () => void; onDelete: () => void; onMove: (id: string, s: TaskStatus) => void }) {
   return (
     <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 grid md:grid-cols-6 gap-2 items-center">
-      <div className="md:col-span-2"><p className="font-medium">{task.title}</p></div>
+      <div className="md:col-span-2"><p className="font-medium">{task.title}</p><p className="text-xs text-zinc-500">{typeof task.estimatedMinutes === 'number' ? `⏱ ${task.estimatedMinutes} min` : 'Sin tiempo estimado'}</p></div>
       <div><span className={clsx('badge', `p-${task.priority.toLowerCase()}`)}>{priorityLabel[task.priority]}</span></div>
       <div className="text-sm">{task.dueDate ? format(parseISO(task.dueDate), 'dd/MM/yyyy') : '-'}</div>
       <div>
@@ -423,7 +427,13 @@ function TaskFormModal({ task, onClose, onSaved }: { task: Task | null; onClose:
     status: task?.status || 'PENDING',
     tags: task?.tags || '',
     internalNotes: task?.internalNotes || '',
+    estimatedMinutes: task?.estimatedMinutes?.toString() || '',
   });
+  const [subtasks, setSubtasks] = useState<Array<{ title: string; estimatedMinutes: string; completed: boolean }>>(
+    task?.subtasks?.length
+      ? task.subtasks.map((s) => ({ title: s.title, estimatedMinutes: s.estimatedMinutes?.toString() || '', completed: s.completed }))
+      : [{ title: '', estimatedMinutes: '', completed: false }]
+  );
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -432,7 +442,18 @@ function TaskFormModal({ task, onClose, onSaved }: { task: Task | null; onClose:
     await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...form, tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean) }),
+      body: JSON.stringify({
+        ...form,
+        estimatedMinutes: form.estimatedMinutes ? Number(form.estimatedMinutes) : null,
+        subtasks: subtasks
+          .filter((s) => s.title.trim())
+          .map((s) => ({
+            title: s.title.trim(),
+            estimatedMinutes: s.estimatedMinutes ? Number(s.estimatedMinutes) : null,
+            completed: !!s.completed,
+          })),
+        tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+      }),
     });
     onSaved();
   }
@@ -448,7 +469,66 @@ function TaskFormModal({ task, onClose, onSaved }: { task: Task | null; onClose:
           <input className="input" type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
           <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as TaskStatus })}>{statuses.map((s) => <option key={s} value={s}>{statusLabels[s]}</option>)}</select>
         </div>
+        <input className="input" type="number" min={0} placeholder="Tiempo estimado tarea (min)" value={form.estimatedMinutes} onChange={(e) => setForm({ ...form, estimatedMinutes: e.target.value })} />
         <input className="input" placeholder="Etiquetas separadas por coma" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} />
+
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">Subtareas</p>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setSubtasks([...subtasks, { title: '', estimatedMinutes: '', completed: false }])}
+            >
+              + Añadir subtarea
+            </button>
+          </div>
+          {subtasks.map((s, i) => (
+            <div key={i} className="grid md:grid-cols-12 gap-2 items-center">
+              <input
+                className="input md:col-span-7"
+                placeholder={`Subtarea ${i + 1}`}
+                value={s.title}
+                onChange={(e) => {
+                  const next = [...subtasks];
+                  next[i] = { ...next[i], title: e.target.value };
+                  setSubtasks(next);
+                }}
+              />
+              <input
+                className="input md:col-span-3"
+                type="number"
+                min={0}
+                placeholder="Min"
+                value={s.estimatedMinutes}
+                onChange={(e) => {
+                  const next = [...subtasks];
+                  next[i] = { ...next[i], estimatedMinutes: e.target.value };
+                  setSubtasks(next);
+                }}
+              />
+              <label className="text-xs md:col-span-1 flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={s.completed}
+                  onChange={(e) => {
+                    const next = [...subtasks];
+                    next[i] = { ...next[i], completed: e.target.checked };
+                    setSubtasks(next);
+                  }}
+                /> ok
+              </label>
+              <button
+                type="button"
+                className="btn-secondary md:col-span-1"
+                onClick={() => setSubtasks(subtasks.filter((_, idx) => idx !== i))}
+              >
+                x
+              </button>
+            </div>
+          ))}
+        </div>
+
         <textarea className="input min-h-20" placeholder="Notas internas" value={form.internalNotes} onChange={(e) => setForm({ ...form, internalNotes: e.target.value })} />
         <div className="flex justify-end gap-2"><button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button><button className="btn-primary">Guardar</button></div>
       </form>

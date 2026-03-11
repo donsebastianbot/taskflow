@@ -11,8 +11,10 @@ export type Task = {
   tags: string;
   requester: string | null;
   internalNotes: string | null;
+  estimatedMinutes: number | null;
   createdAt: string;
   updatedAt: string;
   comments: { id: string; content: string; createdAt: string }[];
   history: { id: string; fromStatus: TaskStatus | null; toStatus: TaskStatus; note: string | null; createdAt: string }[];
+  subtasks: { id: string; title: string; estimatedMinutes: number | null; completed: boolean }[];
 };

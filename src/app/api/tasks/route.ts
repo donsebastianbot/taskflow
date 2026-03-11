@@ -14,6 +14,7 @@ export async function GET() {
     include: {
       comments: { orderBy: { createdAt: 'desc' } },
       history: { orderBy: { createdAt: 'desc' }, take: 6 },
+      subtasks: { orderBy: { createdAt: 'asc' } },
     },
     orderBy: { updatedAt: 'desc' },
   });
@@ -38,6 +39,18 @@ export async function POST(request: Request) {
       tags: Array.isArray(body.tags) ? body.tags.join(',') : body.tags || '',
       requester: body.requester || null,
       internalNotes: body.internalNotes || null,
+      estimatedMinutes: typeof body.estimatedMinutes === 'number' ? body.estimatedMinutes : null,
+      subtasks: Array.isArray(body.subtasks)
+        ? {
+            create: body.subtasks
+              .filter((s: { title?: string }) => s?.title?.trim())
+              .map((s: { title: string; estimatedMinutes?: number; completed?: boolean }) => ({
+                title: s.title.trim(),
+                estimatedMinutes: typeof s.estimatedMinutes === 'number' ? s.estimatedMinutes : null,
+                completed: !!s.completed,
+              })),
+          }
+        : undefined,
       history: {
         create: {
           toStatus: (body.status as TaskStatus) || TaskStatus.PENDING,
@@ -45,7 +58,7 @@ export async function POST(request: Request) {
         },
       },
     },
-    include: { comments: true, history: true },
+    include: { comments: true, history: true, subtasks: true },
   });
 
   return NextResponse.json(task, { status: 201 });
